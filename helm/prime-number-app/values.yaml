@@ -1,0 +1,10 @@
+namespace: prime-number-app
+replicaCount: 1
+image:
+  repository: your-docker-repo/prime-number-app
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8083
+  targetPort: 8083

@@ -1,0 +1,46 @@
+name: Deploy to Minikube
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, macos]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Minikube
+        run: |
+          minikube start --driver=hyperkit
+          eval $(minikube docker-env)
+      - name: Configure Docker to use Minikube's Docker daemon
+        run: |
+          eval $(minikube docker-env)
+
+      - name: Check Helm installation
+        run: |
+          helm version
+
+      - name: Install Helm Chart for Prime Number App
+        run: |
+          helm upgrade --install prime-number ./helm/prime-number \
+            --namespace prime-number-app \
+            --values ./helm/prime-number/values.yaml
+
+      - name: Install Helm Chart for Datadog
+        run: |
+          helm upgrade --install datadog ./helm/datadog \
+            --namespace datadog \
+            --values ./helm/datadog/values.yaml
+
+      - name: Apply Kubernetes Configuration
+        run: |
+          kubectl apply -f ./k8s/namespaces.yaml
+          kubectl apply -f ./k8s/deployment.yaml
+          kubectl apply -f ./k8s/service.yaml
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}

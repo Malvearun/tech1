@@ -1,0 +1,5 @@
+# system-probe.yaml
+system_probe_config:
+  enabled: true
+  # additional settings if needed
+

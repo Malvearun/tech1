@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datadog-agent
+  namespace: datadog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+    spec:
+      containers:
+      - name: datadog-agent
+        image: gcr.io/datadoghq/agent:7.38.2
+        env:
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secrets
+              key: api-key
+        - name: DD_APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secrets
+              key: app-key
+        - name: DD_SITE
+          value: datadoghq.eu
+        - name: KUBELET_TLS_VERIFY
+          value: "false"
+        ports:
+        - containerPort: 8125
+        volumeMounts:
+        - name: kubelet-certs
+          mountPath: /var/lib/minikube/certs
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+      volumes:
+      - name: kubelet-certs
+        hostPath:
+          path: /var/lib/minikube/certs

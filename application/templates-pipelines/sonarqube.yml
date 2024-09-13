@@ -1,0 +1,35 @@
+# sonarqube.yml
+parameters:
+  - name: SONAR_PROJECT_KEY
+    type: string
+  - name: SONAR_LINK
+    type: string
+  - name: SONAR_TOKEN
+    type: string
+
+jobs:
+  - job: SonarQubeAnalysis
+    displayName: 'SonarQube Analysis Job'
+    pool:
+      name: Default
+    steps:
+      - task: CmdLine@2
+        displayName: 'Install Sonar Tools and Start Scanner'
+        inputs:
+          script: |
+            echo Installing sonarScanner tool
+            dotnet tool install --global dotnet-sonarscanner 
+
+            echo Start Scanner
+            dotnet-sonarscanner begin /k:"{{ parameters.SONAR_PROJECT_KEY }}" /d:sonar.host.url="{{ parameters.SONAR_LINK }}" /d:sonar.login="{{ parameters.SONAR_TOKEN }}"
+
+      - script: dotnet build PrimeService/PrimeService.csproj --configuration Release
+        displayName: 'Build Project for SonarQube Analysis'
+        continueOnError: false
+
+      - task: CmdLine@2
+        displayName: 'Collect Sonar results and Upload'
+        inputs:
+          script: |
+            echo Run Sonar End
+            dotnet-sonarscanner end /d:sonar.login="{{ parameters.SONAR_TOKEN }}"

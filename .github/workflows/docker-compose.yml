@@ -1,0 +1,44 @@
+name: Datadog Agent Deployment
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Log in to Docker Hub (optional if you're using Docker Hub)
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}  # Store this in GitHub Secrets
+          password: ${{ secrets.DOCKER_PASSWORD }}  # Store this in GitHub Secrets
+
+      # Step 4: Build and push Docker image
+      - name: Build and push Docker image
+        run: |
+          docker-compose down
+          docker-compose up -d
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}  # Store your Datadog API Key in GitHub Secrets
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}  # Store your Datadog App Key in GitHub Secrets
+
+      # Step 5: Verify the container is running
+      - name: Verify Docker containers
+        run: docker ps
+
+      # Step 6: Check Datadog Logs
+      - name: Verify Datadog Agent Logs
+        run: |
+          docker exec -it dd-agent tail -n 100 /var/log/datadog/agent.log

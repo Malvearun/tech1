@@ -1,0 +1,171 @@
+{{- if (empty .Values.server.configMapOverrideName) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+{{- with .Values.server.configMapAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+  labels:
+    {{- include "prometheus.server.labels" . | nindent 4 }}
+    {{- with .Values.server.extraConfigmapLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ template "prometheus.server.fullname" . }}
+  namespace: {{ include "prometheus.namespace" . }}
+data:
+  allow-snippet-annotations: "false"
+{{- $root := . -}}
+{{- range $key, $value := .Values.ruleFiles }}
+  {{ $key }}: {{- toYaml $value | indent 2 }}
+{{- end }}
+{{- range $key, $value := .Values.serverFiles }}
+  {{ $key }}: |
+{{- if eq $key "prometheus.yml" }}
+    global:
+{{ $root.Values.server.global | toYaml | trimSuffix "\n" | indent 6 }}
+{{- if $root.Values.server.remoteWrite }}
+    remote_write:
+{{- include "prometheus.server.remoteWrite" $root | nindent 4 }}
+{{- end }}
+{{- if $root.Values.server.remoteRead }}
+    remote_read:
+{{- include "prometheus.server.remoteRead" $root | nindent 4 }}
+{{- end }}
+{{- if or $root.Values.server.tsdb $root.Values.server.exemplars }}
+    storage:
+{{- if $root.Values.server.tsdb }}
+      tsdb:
+{{ $root.Values.server.tsdb | toYaml | indent 8 }}
+{{- end }}
+{{- if $root.Values.server.exemplars }}
+      exemplars:
+{{ $root.Values.server.exemplars | toYaml | indent 8 }}
+{{- end }}
+{{- end }}
+{{- if $root.Values.scrapeConfigFiles }}
+    scrape_config_files:
+{{ toYaml $root.Values.scrapeConfigFiles | indent 4 }}
+{{- end }}
+{{- end }}
+{{- if eq $key "alerts" }}
+{{- if and (not (empty $value)) (empty $value.groups) }}
+    groups:
+{{- range $ruleKey, $ruleValue := $value }}
+    - name: {{ $ruleKey -}}.rules
+      rules:
+{{ $ruleValue | toYaml | trimSuffix "\n" | indent 6 }}
+{{- end }}
+{{- else }}
+{{ toYaml $value | indent 4 }}
+{{- end }}
+{{- else }}
+{{ toYaml $value | default "{}" | indent 4 }}
+{{- end }}
+{{- if eq $key "prometheus.yml" -}}
+{{- if $root.Values.extraScrapeConfigs }}
+{{ tpl $root.Values.extraScrapeConfigs $root | indent 4 }}
+{{- end -}}
+{{- if or ($root.Values.alertmanager.enabled) ($root.Values.server.alertmanagers) }}
+    alerting:
+{{- if $root.Values.alertRelabelConfigs }}
+{{ $root.Values.alertRelabelConfigs | toYaml  | trimSuffix "\n" | indent 6 }}
+{{- end }}
+      alertmanagers:
+{{- if $root.Values.server.alertmanagers }}
+{{ toYaml $root.Values.server.alertmanagers | indent 8 }}
+{{- else }}
+      - kubernetes_sd_configs:
+          - role: pod
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        {{- if $root.Values.alertmanager.prefixURL }}
+        path_prefix: {{ $root.Values.alertmanager.prefixURL }}
+        {{- end }}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace]
+          regex: {{ $root.Release.Namespace }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+          regex: {{ $root.Release.Name }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          regex: {{ default "alertmanager" $root.Values.alertmanager.nameOverride | trunc 63 | trimSuffix "-" }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          regex: "9093"
+          action: keep
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* Add custom alerts for prime number app */ -}}
+  prime_number_alerts.yaml: |
+    groups:
+    - name: prime-number-app-alerts
+      rules:
+      - alert: HighRequestLatency
+        expr: rate(http_request_duration_seconds_sum{app="prime_number_app"}[5m]) / rate(http_request_duration_seconds_count{app="prime_number_app"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High request latency for prime_number_app"
+          description: "The request latency is higher than 0.5 seconds for the prime_number_app."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{app="prime_number_app",status=~"5.."}[5m]) / rate(http_requests_total{app="prime_number_app"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate for prime_number_app"
+          description: "The error rate is higher than 10% for the prime_number_app."
+
+      - alert: LowRequestRate
+        expr: rate(http_requests_total{app="prime_number_app"}[5m]) < 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low request rate for prime_number_app"
+          description: "The request rate is lower than 1 request per minute for the prime_number_app."
+
+      - alert: HighCPUUsage
+        expr: sum(rate(container_cpu_usage_seconds_total{app="prime_number_app"}[5m])) by (pod) / sum(container_spec_cpu_quota{app="prime_number_app"}) by (pod) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage for prime_number_app"
+          description: "The CPU usage is higher than 90% for the prime_number_app."
+
+      - alert: HighMemoryUsage
+        expr: sum(container_memory_usage_bytes{app="prime_number_app"}) by (pod) / sum(container_spec_memory_limit_bytes{app="prime_number_app"}) by (pod) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory usage for prime_number_app"
+          description: "The memory usage is higher than 90% for the prime_number_app."
+
+      - alert: PodRestart
+        expr: increase(kube_pod_container_status_restarts_total{app="prime_number_app"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod restart detected for prime_number_app"
+          description: "A pod in the prime_number_app application has restarted."
+
+      - alert: DiskUsage
+        expr: (sum(container_fs_usage_bytes{app="prime_number_app"}) / sum(container_fs_limit_bytes{app="prime_number_app"})) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage for prime_number_app"
+          description: "The disk usage is higher than 80% for the prime_number_app."

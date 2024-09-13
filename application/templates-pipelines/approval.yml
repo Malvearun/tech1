@@ -1,0 +1,13 @@
+# approval.yml
+jobs:
+  - deployment: ReviewRelease_App
+    displayName: 'Request Approval'
+    pool: Default
+    environment: RequestApproval
+    continueOnError: false
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo "Deploying Application after approval"
+            displayName: 'Wait for Approval'

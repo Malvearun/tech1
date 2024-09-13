@@ -1,0 +1,62 @@
+name: Minikube Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, macos]
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker and Kubernetes in Minikube
+      - name: Start Minikube
+        run: |
+          minikube start --driver=hyperkit
+          minikube status
+
+      - name: Configure Docker to use Minikube's Docker daemon
+        run: |
+          eval $(minikube docker-env)
+
+      # Step 3: Build the Docker images for both containers
+      - name: Build App Image
+        run: |
+          docker build -t prime-number-app:latest ./prime-number-app
+
+      - name: Build Datadog Agent Image
+        run: |
+          docker build -t dd-agent:latest ./datadog-agent
+
+      # Step 4: Deploy the application to Kubernetes
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/deployment.yml
+          kubectl apply -f k8s/datadog-deployment.yml
+          kubectl get pods
+
+      # Step 5: Expose the service in Minikube
+      - name: Expose Service
+        run: |
+          kubectl expose deployment prime-number-app --type=LoadBalancer --port=8083
+          kubectl expose deployment dd-agent --type=LoadBalancer --port=8125
+
+      # Step 6: Check pod status and logs
+      - name: Get Pod Status
+        run: kubectl get pods -o wide
+
+      - name: Check App Logs
+        run: kubectl logs deployment/prime-number-app
+
+      - name: Check Datadog Logs
+        run: kubectl logs deployment/dd-agent
+
+      # Step 7: Stop Minikube (optional for cleanup)
+      - name: Stop Minikube
+        if: always()
+        run: minikube stop

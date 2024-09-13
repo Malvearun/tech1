@@ -1,0 +1,15 @@
+namespace: datadog
+datadog:
+  apm:
+    enabled: true
+  logs:
+    enabled: true
+    containerCollectAll: true
+  process:
+    enabled: true
+  systemProbe:
+    enabled: true
+  site: datadoghq.eu
+  agents:
+    apiKey: {{ .Values.datadog.apiKey }}
+    appKey: {{ .Values.datadog.appKey }}

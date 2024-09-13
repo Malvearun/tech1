@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-config
+  namespace: datadog
+data:
+  datadog.yaml: |
+    apm_config:
+      apm_non_local_traffic: true
+    jmx_use_container_support: true
+    logs_enabled: true
+    logs:
+      - type: file
+        path: /app/prime_number.log
+        service: prime_number_app
+        source: python
+      - type: container
+        path: /var/log/containers/*.log
+        service: kube-logs
+        source: kubernetes
+    listeners:
+      - name: docker
+    config_providers:
+      - name: docker
+        polling: true
+    logs_config:
+      container_collect_all: true
+    process_config:
+      process_collection:
+        enabled: true
+    system_probe_config:
+      enabled: true
+    kubelet:
+    host: "https://192.168.xx.x:10250" #update 
+    kubelet_tls_verify: false
+    kubelet_url: https://192.168.xx.x:10250 #update
+    kubelet_authentication:
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    hostname: #hostname to be set
+    site: datadoghq.eu
