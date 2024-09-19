@@ -1,0 +1,37 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: prime-number-app-gateway
+  namespace: prime-number-app
+spec:
+  selector:
+    istio: ingressgateway # use Istio's default ingress gateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prime-number-app
+  namespace: prime-number-app
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - prime-number-app-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: prime-number-app-service  # Change this to your service name
+        port:
+          number: 8083  # Change this to your service port
