@@ -1,16 +1,13 @@
-namespace: prime-number-app
-
-replicas: 1
+replicaCount: 1
 
 image:
   repository: prime-number-app-d1
   tag: latest
   pullPolicy: Never
 
-containerPort: 8083
-
-volume:
-  mountPath: /app/logs
+service:
+  type: ClusterIP
+  port: 8083
 
 resources:
   requests:
@@ -20,6 +17,21 @@ resources:
     memory: "512Mi"
     cpu: "500m"
 
-service:
-  port: 8083
-  targetPort: 8083
+namespace: prime-number-app
+
+volume:
+  mountPath: /app/logs
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  cpuUtilizationPercentage: 80
+
+ingress:
+  enabled: false  # Set to true to enable ingress
+  hosts:
+    - host: chart-example.local
+      paths:
+        - /
+  tls: []  # Define TLS settings here if needed

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: prime-number-app
+  name: datadog-agent
   namespace: argocd
 spec:
   project: default
@@ -13,9 +13,9 @@ spec:
     server: https://kubernetes.default.svc  # Points to the Kubernetes cluster ArgoCD is running in
     namespace: datadog  # Target namespace where you want to deploy the app
   syncPolicy:
-    automated:
-      prune: true  # Automatically remove resources that are no longer defined in Git
-      selfHeal: true  # Automatically correct out-of-sync resources
+    # automated:
+    #   prune: true  # Automatically remove resources that are no longer defined in Git
+    #   selfHeal: true  # Automatically correct out-of-sync resources
     retry:
       limit: 5  # Retry if sync fails
       backoff:

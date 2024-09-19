@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-prime-number-app
+  name: {{ .Release.Name }}
   namespace: {{ .Values.namespace }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: prime-number-app
+      app: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: prime-number-app
+        app: {{ .Release.Name }}
     spec:
       containers:
-      - name: prime-number-app-d1
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+      - name: {{ .Release.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - containerPort: {{ .Values.containerPort }}
+        - containerPort: {{ .Values.service.port }}
         volumeMounts:
         - name: logs
           mountPath: {{ .Values.volume.mountPath }}
