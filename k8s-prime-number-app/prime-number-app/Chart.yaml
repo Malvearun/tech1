@@ -1,0 +1,5 @@
+apiVersion: v2
+name: prime-number-app
+description: A Helm chart for deploying the prime-number app
+version: 0.1.0
+appVersion: "1.0"

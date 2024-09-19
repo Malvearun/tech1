@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prime-number-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/Malvearun/tech1.git'  # Your GitHub repository URL
+    targetRevision: tech1  # Branch or tag to track
+    path: ./k8s-prime-number-app  # Path to your manifests inside the repository
+  destination:
+    server: https://kubernetes.default.svc  # Points to the Kubernetes cluster ArgoCD is running in
+    namespace: prime-number-app  # Target namespace where you want to deploy the app
+  syncPolicy:
+    automated:
+      prune: true  # Automatically remove resources that are no longer defined in Git
+      selfHeal: true  # Automatically correct out-of-sync resources
+    retry:
+      limit: 5  # Retry if sync fails
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

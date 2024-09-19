@@ -1,0 +1,25 @@
+namespace: prime-number-app
+
+replicas: 1
+
+image:
+  repository: prime-number-app-d1
+  tag: latest
+  pullPolicy: Never
+
+containerPort: 8083
+
+volume:
+  mountPath: /app/logs
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+service:
+  port: 8083
+  targetPort: 8083

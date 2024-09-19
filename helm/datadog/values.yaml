@@ -32,7 +32,7 @@ datadog:
   # datadog.apiKey -- Your Datadog API key
 
   ## ref: https://app.datadoghq.com/account/settings#agent/kubernetes
-  apiKey:  # <DATADOG_API_KEY>
+  apiKey:   # <DATADOG_API_KEY_SECRET>
 
   # datadog.apiKeyExistingSecret -- Use existing Secret which stores API key instead of creating a new one. The value should be set with the `api-key` key inside the secret.
 
@@ -43,7 +43,7 @@ datadog:
 
   ## If you are using clusterAgent.metricsProvider.enabled = true, you must set
   ## a Datadog application key for read access to your metrics.
-  appKey:  # <DATADOG_APP_KEY>
+  appKey:   # <DATADOG_APP_KEY_SECRET>
 
   # datadog.appKeyExistingSecret -- Use existing Secret which stores APP key instead of creating a new one. The value should be set with the `app-key` key inside the secret.
 
@@ -113,7 +113,7 @@ datadog:
   ## Set to 'us5.datadoghq.com' to send data to the US5 site.
   ## Set to 'ddog-gov.com' to send data to the US1-FED site.
   ## Set to 'ap1.datadoghq.com' to send data to the AP1 site.
-  site:  # datadoghq.com
+  site: datadoghq.eu # datadoghq.com
 
   # datadog.dd_url -- The host of the Datadog intake server to send Agent data to, only set this option if you need the Agent to send data to a custom URL
 
@@ -279,7 +279,7 @@ datadog:
           fieldPath: status.hostIP
     # datadog.kubelet.tlsVerify -- Toggle kubelet TLS verification
     # @default -- true
-    tlsVerify:  # false
+    tlsVerify: false
     # datadog.kubelet.hostCAPath -- Path (on host) where the Kubelet CA certificate is stored
     # @default -- None (no mount from host)
     hostCAPath:
@@ -292,6 +292,7 @@ datadog:
     # datadog.kubelet.coreCheckEnabled -- Toggle if kubelet core check should be used instead of Python check. (Requires Agent/Cluster Agent 7.53.0+)
     # @default -- true
     coreCheckEnabled: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
 
   # datadog.expvarPort -- Specify the port to expose pprof and expvar to not interfere with the agent metrics port from the cluster-agent, which defaults to 5000
   expvarPort: 6000
@@ -422,12 +423,21 @@ datadog:
     # datadog.logs.enabled -- Enables this to activate Datadog Agent log collection
 
     ## ref: https://docs.datadoghq.com/agent/basic_agent_usage/kubernetes/#log-collection-setup
-    enabled: false
+    enabled: true
+    logs:
+      - type: file
+        path: /app/prime_number.log
+        service: prime_number_app
+        source: python
+      - type: container
+        path: /var/log/containers/*.log
+        service: kube-logs
+        source: kubernetes
 
     # datadog.logs.containerCollectAll -- Enable this to allow log collection for all containers
 
     ## ref: https://docs.datadoghq.com/agent/basic_agent_usage/kubernetes/#log-collection-setup
-    containerCollectAll: false
+    containerCollectAll: true
 
     # datadog.logs.containerCollectUsingFiles -- Collect logs from files in /var/log/pods instead of using container runtime API
 
@@ -439,6 +449,10 @@ datadog:
 
     ## ref: https://docs.datadoghq.com/agent/logs/advanced_log_collection/?tab=configurationfile#automatic-multi-line-aggregation
     autoMultiLineDetection: false
+
+    # Additional configuration
+    logs_config:
+      container_collect_all: true
 
   ## Enable apm agent and provide custom configs
   ##
@@ -458,7 +472,7 @@ datadog:
     # DEPRECATED. Use datadog.apm.portEnabled instead
 
     ## ref: https://github.com/DataDog/docker-dd-agent#tracing-from-the-host
-    enabled: false
+    enabled: true
 
     # datadog.apm.port -- Override the trace Agent port
 

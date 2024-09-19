@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prime-number-service
+  namespace: prime-number-app
+spec:
+  selector:
+    app: prime-number-app
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083
+  type: ClusterIP

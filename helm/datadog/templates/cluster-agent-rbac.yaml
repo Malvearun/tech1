@@ -16,6 +16,13 @@ rules:
   - namespaces
   - componentstatuses
   - limitranges
+  - nodes/stats
+  - pods/stats
+  - nodes/metrics
+  - nodes/proxy
+  - nodes/spec
+  - nodes/pods
+  - nodes/healthz
   verbs:
   - get
   - list
