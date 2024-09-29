@@ -1,0 +1,35 @@
+# hello-whale-chart/values.yaml
+replicaCount: 1
+
+image:
+  repository: hello-whale
+  tag: v3
+  pullPolicy: Never
+
+service:
+  type: ClusterIP
+  port: 8087
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50
+
+namespace: hello-whale
+
+ingress:
+  enabled: false  # Set to true to enable ingress
+  hosts:
+    - host: chart-example.local
+      paths:
+        - /
+  tls: []  # Define TLS settings here if needed 
